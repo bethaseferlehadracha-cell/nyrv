@@ -291,17 +291,6 @@ h1.ttl{font-size:clamp(26px,3.2vw,40px);font-weight:800;line-height:1.2;margin-b
 .mygoals li{margin-right:20px;font-size:16px;line-height:1.7}
 .sun{position:fixed;bottom:-140px;left:50%;width:300px;height:300px;margin-left:-150px;border-radius:50%;background:radial-gradient(circle,#ffe2b8,#ffb98f 50%,transparent 70%);opacity:var(--dawn);z-index:0;filter:blur(4px);transition:opacity 2.5s}
 
-/* ---------- voice ---------- */
-.vbtn{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid rgba(207,216,232,.3);background:rgba(207,216,232,.08);font-size:18px;display:grid;place-items:center;transition:all .2s}
-.vbtn.off{opacity:.55}
-.vbtn.na{opacity:.3}
-.talking .fig,.talking img{animation:talk .32s ease-in-out infinite alternate}
-@keyframes talk{from{transform:translateY(0)}to{transform:translateY(-3px)}}
-.talking .bubble{box-shadow:0 0 0 3px rgba(207,216,232,.35),0 14px 40px rgba(0,0,0,.4)}
-.noy-col .bubble,.mp-wrap .bubble{cursor:pointer}
-.voicepick{margin-top:12px;display:flex;align-items:center;gap:12px;font-size:15px;color:var(--ink2);justify-content:center;flex-wrap:wrap}
-.voicepick small{display:block;width:100%;font-size:13px;color:var(--ink3)}
-
 /* ---------- bridge (between pages) ---------- */
 .bridge{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgba(4,5,9,.74);backdrop-filter:blur(9px);animation:sceneIn .45s ease both}
 .bridge .bx{width:100%;max-width:560px;background:#12141c;border:1px solid rgba(207,216,232,.25);border-radius:24px;padding:26px 26px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:16px}
@@ -325,8 +314,6 @@ h1.ttl{font-size:clamp(26px,3.2vw,40px);font-weight:800;line-height:1.2;margin-b
   .code .gap{width:4px}
   .clock{min-width:auto}
   .clock b{font-size:20px}
-  .hud{gap:8px}
-  .vbtn{width:32px;height:32px;font-size:15px;border-radius:9px}
   .clock small{display:none}
   #stage{padding:76px 16px 0}
   .split{display:flex;flex-direction:column;gap:14px;padding:6px 0 40px}
@@ -378,7 +365,6 @@ h1.ttl{font-size:clamp(26px,3.2vw,40px);font-weight:800;line-height:1.2;margin-b
 <header class="hud" id="hud">
   <div class="brand">הלילה שלפני<small>ניסוח וניתוח מטרות להדרכה</small></div>
   <div class="code" id="code"></div>
-  <button class="vbtn" id="vbtn" title="קול הדמויות">🔊</button>
   <div class="clock"><b id="clk">22:00</b><small id="clkS">עוד 10 שעות לשיעור</small></div>
   <div class="prog" id="prog" style="width:0"></div>
 </header>
@@ -427,56 +413,9 @@ function setClock(c){
 function noy(pose,text){
   return `<aside class="noy-col"><div class="bubble pop" id="nb">${t(text)}</div><img class="fig" id="nf" data-p="${pose}" src="${IMG[P[pose]]}" alt="סרן נוי"><div class="np"><b>סרן נוי</b>קצינת הדרכה חטיבתית</div></aside>`;
 }
-/* ================= voice (Web Speech) ================= */
-const VOICE={on:true,ok:false,f:null,m:null};
-try{const v=localStorage.getItem('lomda-voice');if(v==='0')VOICE.on=false}catch(e){}
-function loadVoices(){
-  if(!('speechSynthesis' in window))return updVoice();
-  const vs=speechSynthesis.getVoices().filter(v=>/^(he|iw)/i.test(v.lang));
-  const isF=v=>/carmit|hila|female|woman|google/i.test(v.name);
-  const isM=v=>/asaf|avri|\bmale\b|man\b/i.test(v.name)&&!/female|woman/i.test(v.name);
-  VOICE.f=vs.find(isF)||vs.find(v=>!isM(v))||vs[0]||null;
-  VOICE.m=vs.find(isM)||null;
-  VOICE.ok=vs.length>0;updVoice();
-}
-if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
-function updVoice(){
-  const b=$('#vbtn');if(b){b.textContent=VOICE.on&&VOICE.ok?'🔊':'🔇';b.classList.toggle('off',!VOICE.on);b.classList.toggle('na',!VOICE.ok);
-    b.title=!VOICE.ok?'לא נמצא קול עברי במכשיר הזה':VOICE.on?'השתקת הדמויות':'הפעלת קול הדמויות'}
-  $$('.vp-pill').forEach(x=>x.classList.toggle('sel',(x.dataset.v==='1')===VOICE.on));
-  const n=$('#vpnote');if(n)n.textContent=VOICE.ok?'סרן נוי והמ״פ ידברו – אפשר להשתיק בכל רגע בכפתור 🔊 למעלה':'במכשיר הזה לא נמצא קול בעברית – הטקסט יופיע בבועות כרגיל';
-}
-function setVoice(on){VOICE.on=on;try{localStorage.setItem('lomda-voice',on?'1':'0')}catch(e){}if(!on)stopVoice();updVoice()}
-function stopVoice(){try{speechSynthesis.cancel()}catch(e){}$$('.talking').forEach(e=>e.classList.remove('talking'))}
-function speechText(html){
-  let s=String(html).replace(/<br\s*\/?>/gi,'. ').replace(/<[^>]+>/g,'');
-  const R=[[/ב[־-]?08:00/g,'בשמונה בבוקר'],[/♥/g,'לב'],[/המ[״"]פ/g,'המפקד'],[/סד[״"]פ/g,'סדר פעולות'],[/רוס[״"]ר/g,'רובה סער'],[/עפ[״"]י|ע[״"]פ/g,'על פי'],[/ק[״"]מ/g,'קילומטר'],
-    [/הת[״"]ת/g,'הנתונים הטכניים'],[/אחר[״"]ת/g,'אחרת'],[/M[-־]?16/g,'אֶם שש עשרה'],[/08:00/g,'שמונה בבוקר'],[/[✓✗×😉👊🔒🔓]/g,''],[/[–—]/g,', '],[/…/g,'... '],[/־/g,' '],[/[״"]/g,'']];
-  R.forEach(([a,b])=>s=s.replace(a,b));
-  return s.replace(/\s+/g,' ').replace(/\s+([,.?!])/g,'$1').replace(/\.{2}(?!\.)/g,'.').trim();
-}
-function speak(html,who){
-  if(!VOICE.on||!VOICE.ok)return;
-  try{
-    speechSynthesis.cancel();
-    const txt=speechText(html);if(!txt)return;
-    const u=new SpeechSynthesisUtterance(txt);u.lang='he-IL';
-    const mp=who==='mp',v=mp?(VOICE.m||VOICE.f):VOICE.f;if(v)u.voice=v;
-    u.rate=1;u.pitch=mp?(VOICE.m?.95:.7):1.08;
-    const box=()=>$(mp?'.mp-wrap':'.noy-col');
-    u.onstart=()=>{const b=box();b&&b.classList.add('talking')};
-    u.onend=u.onerror=()=>{const b=box();b&&b.classList.remove('talking')};
-    speechSynthesis.speak(u);
-  }catch(e){}
-}
-document.addEventListener('click',e=>{
-  const b=e.target.closest('.noy-col .bubble,.mp-wrap .bubble');
-  if(b)speak(b.innerHTML,b.closest('.mp-wrap')?'mp':'noy');
-  if(e.target.closest('#vbtn')){if(!VOICE.ok)return;setVoice(!VOICE.on);if(VOICE.on){const nb=$('#nb')||$('.mp-wrap .bubble');nb&&speak(nb.innerHTML,nb.closest('.mp-wrap')?'mp':'noy')}}
-});
 function say(pose,text){
   const b=$('#nb'),f=$('#nf');if(!b)return;
-  b.classList.remove('pop');void b.offsetWidth;b.innerHTML=t(text);b.classList.add('pop');speak(b.innerHTML,'noy');
+  b.classList.remove('pop');void b.offsetWidth;b.innerHTML=t(text);b.classList.add('pop');
   if(f.dataset.p!==pose){f.classList.add('swap');setTimeout(()=>{f.src=IMG[P[pose]];f.dataset.p=pose;f.classList.remove('swap')},150)}
 }
 
@@ -515,9 +454,7 @@ function go(i){
   $$('.march,.fog,.thoughts,.mp-wrap,.moon,.horizon,.notif,.bridge').forEach(e=>e.remove());
   const el=document.createElement('section');el.className='scene';st.appendChild(el);
   window.scrollTo({top:0,behavior:'instant'});
-  stopVoice();
   sc.render(el,()=>advance(i));
-  setTimeout(()=>{const nb=$('#nb');if(nb&&S.i===i)speak(nb.innerHTML,'noy')},650);
 }
 const BR={
  2:['{יצאת|יצאת} למסע בלי לדעת לאן, כמה זמן ולמה – ו{הרגשת|הרגשת} איך הראש עסוק בניחושים.','נחזור להווה ונבין מה המטרות נותנות לחניך בשיעור.'],
@@ -569,19 +506,16 @@ scene({ch:0,clock:'22:00',render(el,next){
     <div class="who">איך לפנות אליך?
       <button class="pill" data-g="m">קצין</button><button class="pill" data-g="f">קצינה</button>
     </div>
-    <div class="voicepick">קול הדמויות:<button class="pill vp-pill" data-v="1">🔊 פועל</button><button class="pill vp-pill" data-v="0">🔇 כבוי</button><small id="vpnote"></small></div>
     <button class="btn" id="go" disabled>מתחילים את הלילה ←</button>
     ${saved&&saved.i>0&&saved.g?`<div class="resume">יש לך לילה בהתקדמות (${CH[scenes[saved.i]?.ch]||''}) <button id="res">להמשיך מאיפה שעצרתי</button></div>`:''}
   </div>`;
   const notif=document.createElement('div');notif.className='notif';
   const drawNotif=()=>notif.innerHTML=`<div class="top"><b>המג״ד</b><span>עכשיו</span></div><p>${t('מחר 08:00 {אתה מעביר|את מעבירה} שיעור ראשון לצוות. בהצלחה.')}</p>`;
   drawNotif();document.body.appendChild(notif);
-  if(S.g){$$('.pill[data-g]',el).forEach(x=>x.classList.toggle('sel',x.dataset.g===S.g));$('#go',el).disabled=false}
-  $$('.pill[data-g]',el).forEach(p=>p.onclick=()=>{S.g=p.dataset.g;$$('.pill[data-g]',el).forEach(x=>x.classList.toggle('sel',x===p));$('#go',el).disabled=false;drawNotif()});
-  $$('.vp-pill',el).forEach(x=>x.onclick=()=>setVoice(x.dataset.v==='1'));updVoice();
-  const warm=()=>{try{if(VOICE.on&&VOICE.ok){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}}catch(e){}};
-  $('#go',el).onclick=()=>{warm();S={g:S.g,i:0,letters:[0,0,0,0,0,0,0],first:0,total:0,goals:null,topic:null};next()};
-  const r=$('#res',el);if(r)r.onclick=()=>{warm();S=saved;clockMin=0;go(S.i)};
+  if(S.g){$$('.pill',el).forEach(x=>x.classList.toggle('sel',x.dataset.g===S.g));$('#go',el).disabled=false}
+  $$('.pill',el).forEach(p=>p.onclick=()=>{S.g=p.dataset.g;$$('.pill',el).forEach(x=>x.classList.toggle('sel',x===p));$('#go',el).disabled=false;drawNotif()});
+  $('#go',el).onclick=()=>{S={g:S.g,i:0,letters:[0,0,0,0,0,0,0],first:0,total:0,goals:null,topic:null};next()};
+  const r=$('#res',el);if(r)r.onclick=()=>{S=saved;clockMin=0;go(S.i)};
 }});
 
 /* =====================================================
@@ -602,7 +536,6 @@ function mpSay(el,html){
   const w=document.createElement('div');w.className='mp-wrap';
   w.innerHTML=`<div class="bubble pop">${html}</div><img src="${IMG.mp}" alt="המ״פ"><div class="np"><b>המ״פ</b>מפקד הפלוגה</div>`;
   if(window.innerWidth<900){const ch=$('.chap',el);ch?ch.after(w):el.prepend(w)}else document.body.appendChild(w);
-  setTimeout(()=>speak(html,'mp'),350);
 }
 scene({ch:1,clock:'--:--',render(el,next){
   marchBg();
@@ -718,7 +651,7 @@ scene({ch:2,clock:'23:15',render(el,next){
   $$('.mat',el).forEach(m=>m.onclick=()=>{if(sel.has(m)){sel.delete(m);m.classList.remove('sel')}else if(sel.size<4){sel.add(m);m.classList.add('sel')}$('#ok',el).disabled=sel.size!==4;$('#ok',el).textContent=`זה מה שנכנס (${sel.size}/4)`});
   $('#ok',el).onclick=()=>{
     $$('.mat',el).forEach(m=>m.disabled=true);$('#ok',el).classList.add('hidden');$('#after',el).classList.remove('hidden');
-    say('think','למה דווקא אלה?<br>אם הייתי בוחרת ארבעה אחרים – <b>מי משתינו צודקת?</b><br>בלי מטרה, כל בחירה נראית נכונה… וכל בחירה נראית שגויה.');
+    say('think','למה דווקא אלה?<br>אם הייתי בוחרת ארבעה אחרים – <b>{מי מאיתנו צודק|מי משתינו צודקת}?</b><br>בלי מטרה, כל בחירה נראית נכונה… וכל בחירה נראית שגויה.');
   };
   $('#nx',el).onclick=next;
 }});
